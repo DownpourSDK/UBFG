@@ -13,14 +13,8 @@
 #include <math.h>
 #include <limits>
 
-FontRender::FontRender(Ui_MainWindow *_ui) : ui(_ui)
-{}
-
-FontRender::~FontRender()
-{}
-
-#define WIDTH  1024
-#define HEIGHT 1024
+FontRender::FontRender(Ui_MainWindow *_ui) : ui(_ui) {}
+FontRender::~FontRender() {}
 
 struct Point
 {
@@ -34,8 +28,9 @@ struct Grid
     Point *grid;
 };
 
-Point pointInside = { 0, 0, 0 };
-Point pointEmpty = { 9999, 9999, 9999*9999 };
+static const Point pointInside = { 0, 0, 0 };
+static const Point pointEmpty = { 9999, 9999, 9999*9999 };
+
 Grid grid[2];
 
 static inline Point Get(Grid &g, int x, int y)

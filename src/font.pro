@@ -16,9 +16,7 @@ SOURCES += main.cpp \
     fontrender.cpp \
     fontview.cpp \
     imagepacker.cpp \
-    imagecrop.cpp \
     guillotine.cpp \
-    imagesort.cpp \
     sdf.cpp \
     maxrects.cpp
 HEADERS += mainwindow.h \

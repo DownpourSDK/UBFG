@@ -21,7 +21,6 @@ void Guillotine::delGuillotine()
         child[1]->delGuillotine();
     }
     delete this;
-    //qDebug("%d", this);
 }
 
 void Guillotine::heuristic(QImage * img, int lvl)

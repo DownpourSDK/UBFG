@@ -120,3 +120,80 @@ bool ImagePacker::compareImages(QImage* img1, QImage* img2, int* ii, int *jj)
     }
     return false;
 }
+
+void ImagePacker::crop(QList<packedImage*> *images)
+{
+    int i, j, w, h, x, y;
+    QRgb pix;
+    bool t;
+    if(trim) for(i = 0; i < images->size(); i++)
+    {
+        pix = images->at(i)->img.pixel(0,0);
+        t = true;
+        //top trimming
+        for(y = 0; y < images->at(i)->img.height(); y++)
+        {
+            for(j = 0; j < images->at(i)->img.width(); j++)
+                if(images->at(i)->img.pixel(j,y) != pix) {t = false; break;}
+            if(!t) break;
+        }
+        t = true;
+        //left
+        for(x = 0; x < images->at(i)->img.width(); x++){
+            for(j = y; j < images->at(i)->img.height(); j++)
+                if(images->at(i)->img.pixel(x,j) != pix) {t = false; break;}
+            if(!t) break;
+        }
+        t = true;
+        //right
+        for(w = images->at(i)->img.width(); w > 0; w--){
+            for(j = y; j < images->at(i)->img.height(); j++)
+                if(images->at(i)->img.pixel(w-1,j) != pix) {t = false; break;}
+            if(!t) break;
+        }
+        t = true;
+        //else
+        {
+            //bottom
+            for(h = images->at(i)->img.height(); h > 0; h--){
+                for(j = x; j < w; j++)
+                    if(images->at(i)->img.pixel(j,h-1) != pix) {t = false; break;}
+                if(!t) break;
+            }
+        }
+        w = w - x;
+        h = h - y;
+        if(w < 0) w = 0;
+        if(h < 0) h = 0;
+        QImage newImg;
+        QRect pos(0, 0, images->at(i)->img.width(), images->at(i)->img.height());
+
+        if(w > 0) newImg = images->at(i)->img.copy(QRect(x-borderLeft, y-borderTop, w+borderLeft+borderRight, h+borderTop+borderBottom));
+        images->operator [](i)->img = newImg;
+        images->operator [](i)->crop = QRect(x, y, w, h);
+        images->operator [](i)->rc = pos;
+    }
+}
+
+
+void ImagePacker::sort(QList<packedImage*> *images)
+{
+    switch(sortOrder)
+    {
+        case 1:
+            std::sort(images->begin(), images->end(), [] (const packedImage *i1, const packedImage *i2) -> bool {
+                return (i1->img.width() << 10) + i1->img.height() > (i2->img.width() << 10) + i2->img.height();
+            });
+            break;
+        case 2:
+            std::sort(images->begin(), images->end(), [] (const packedImage *i1, const packedImage *i2) -> bool {
+                return (i1->img.height() << 10) + i1->img.width() > (i2->img.height() << 10) +i2->img.width();
+            });
+            break;
+        case 3:
+            std::sort(images->begin(), images->end(), [] (const packedImage *i1, const packedImage *i2) -> bool {
+                return i1->img.height() * i1->img.width() > i2->img.height() * i2->img.width();
+            });
+            break;
+    }
+}
