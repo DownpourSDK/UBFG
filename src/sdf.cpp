@@ -5,15 +5,12 @@
 #include <QDebug>
 #include <math.h>
 
-#define DIST_CACHE
 #define MULTIPLER 8
 
 struct Point
 {
     short dx, dy;
-#ifdef DIST_CACHE
     int f;
-#endif
 };
 
 struct Grid
@@ -29,13 +26,8 @@ struct Grid
         delete[] grid;
     }
 };
-#ifdef DIST_CACHE
 static const Point pointInside = { 0, 0, 0 };
 static const Point pointEmpty = { SHRT_MAX, SHRT_MAX, INT_MAX/2 };
-#else
-static const Point pointInside = { 0, 0 };
-static const Point pointEmpty = { SHRT_MAX, SHRT_MAX };
-#endif
 
 static inline Point Get(Grid &g, int x, int y)
 {
@@ -47,21 +39,6 @@ static inline void Put(Grid &g, int x, int y, const Point &p)
     g.grid[y * (g.w + 2) + x] = p;
 }
 
-#ifndef DIST_CACHE
-static inline void Compare(Grid &g, int x, int y, int offsetx, int offsety)
-{
-    Point p = Get(g, x, y);
-    Point other = Get(g, x + offsetx, y + offsety);
-    other.dx += offsetx;
-    other.dy += offsety;
-    int newdist = other.dx*other.dx+other.dy*other.dy;
-    if (newdist <= p.dx*p.dx+p.dy*p.dy)
-    {
-        p = other;
-    }
-    Put(g, x, y, p);
-}
-#else
 static inline void Compare(Grid &g, int x, int y, int offsetx, int offsety)
 {
     int add;
@@ -95,7 +72,7 @@ static inline void Compare(Grid &g, int x, int y, int offsetx, int offsety)
     }
     Put(g, x, y, p);
 }
-#endif
+
 static void GenerateSDF(Grid &g)
 {
     /* forward scan */
@@ -191,18 +168,7 @@ QImage dfcalculate(QImage &img, bool transparent = false)
         Put(grid2, w + 1, y, pointEmpty);
     }
     qDebug() << "Prepare:\t" << myTimer.elapsed() << "ms";
-    /* calculation */
-    //#pragma omp parallel sections
-    {
-        //#pragma omp section
-        //{
-            //GenerateSDF(grid1);
-        //}
-        //#pragma omp section
-        //{
-            GenerateSDF(grid2);
-        //}
-    }
+    GenerateSDF(grid2);
     myTimer.start();
     data  = result.bits();
     #pragma omp parallel for
@@ -211,65 +177,11 @@ QImage dfcalculate(QImage &img, bool transparent = false)
         quint8 linecache[w];
         for(int x = 1; x <= w; x++)
         {
-            #ifdef DIST_CACHE
-            //double dist1 = sqrt((double)Get(grid1, x, y).f);
-            double dist2 = sqrt((double)Get(grid2, x, y).f);
-            #else
-            //double dist1 = sqrt((double)(Get(grid1, x, y).dx*Get(grid1, x, y).dx+Get(grid1, x, y).dy*Get(grid1, x, y).dy));
-            double dist2 = sqrt((double)(Get(grid2, x, y).dx*Get(grid2, x, y).dx+Get(grid2, x, y).dy*Get(grid2, x, y).dy));
-            #endif
-            //double dist = dist1 - dist2;
-            // Clamp and scale
-            quint8 c = dist2 * MULTIPLER;
+            const double dist = sqrt((double)Get(grid2, x, y).f);
+            quint8 c = dist * MULTIPLER;
             data[(y-1)*w + (x-1)] = c;
         }
     }
     qDebug() << "Write:\t\t" << myTimer.elapsed() << "ms";
-    return result;
-}
-
-#include <QPair>
-#include <QVector>
-
-QImage dfcalculate_bruteforce(QImage &img, bool transparent = false)
-{
-    //short x, y;
-    int w = img.width(), h = img.height();
-    QImage result(w, h, QImage::Format_Indexed8);
-    for(int i = 0; i < 256; i++)
-    {
-        result.setColor(i, qRgb(i,i,i));
-    }
-    QVector< QPair<short, short> > cache;
-    for(short y = 0; y < h; y++)
-    {
-        for(short x = 0; x < w; x++)
-        {
-            if(qGreen(img.pixel(x, y)) > 128)
-                cache.append({x,y});
-        }
-    }
-    uchar *data  = result.bits();
-    #pragma omp parallel for
-    for(short y = 0; y < h; y++)
-    {
-        //quint8 linecache[w];
-        for(short x = 0; x < w; x++)
-        {
-            int min = INT_MAX;
-            for(int l = 0; l < cache.size(); l++)
-            {
-                int i = cache.at(l).first - x;
-                int j = cache.at(l).second - y;
-                int d = i * i + j * j;
-                if(d < min)
-                {
-                    min = d;
-                }
-            }
-            quint8 c = sqrt(min) * MULTIPLER;
-            data[y * w + x] = c;
-        }
-    }
     return result;
 }
