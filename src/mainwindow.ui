@@ -1,4 +1,4 @@
-<?xml version="1.0" encoding="UTF-8"?>
+﻿<?xml version="1.0" encoding="UTF-8"?>
 <ui version="4.0">
  <class>MainWindow</class>
  <widget class="QMainWindow" name="MainWindow">
@@ -1073,6 +1073,11 @@
             <item>
              <property name="text">
               <string>BMFont</string>
+             </property>
+            </item>
+            <item>
+             <property name="text">
+              <string>BMFont XML</string>
              </property>
             </item>
            </widget>

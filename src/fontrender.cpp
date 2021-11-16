@@ -324,13 +324,13 @@ void FontRender::run()
             p.fillRect(0,0,texture.width(),texture.height(), bkgColor);
         for (i = 0; i < glyphLst.size(); ++i)
             if(glyphLst.at(i).merged == false)
-                    p.drawImage(QPoint(glyphLst.at(i).rc.x(), glyphLst.at(i).rc.y()), glyphLst.at(i).img);                   
+                    p.drawImage(QPoint(glyphLst.at(i).rc.x(), glyphLst.at(i).rc.y()), glyphLst.at(i).img);
         p.end();
         // apply distance field calculations if selected
         if(distanceField)
         {
             QImage scaled = texture.scaled(texture.size() * 8, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-            dfcalculate(&scaled, 8, exporting && ui->transparent->isEnabled() && ui->transparent->isChecked());
+            // dfcalculate(&scaled, 8, exporting && ui->transparent->isEnabled() && ui->transparent->isChecked());
             QImage texture1 = (scaled.scaled(texture.size()));
             texture = texture1;
         }
@@ -355,6 +355,8 @@ void FontRender::run()
             result = outputXML(fontLst, texture);
         else if (ui->outputFormat->currentText().toLower() == QString("bmfont"))
             result = outputBMFont(fontLst, texture);
+        else if (ui->outputFormat->currentText().toLower() == QString("bmfont xml"))
+            result = outputBMFontXML(fontLst, texture);
         else
             result = outputFNT(fontLst, texture);
         // notify user
@@ -382,7 +384,7 @@ void FontRender::run()
         if(distanceField)
         {
             QImage scaled = texture.scaled(texture.size()*8, Qt::IgnoreAspectRatio, Qt::SmoothTransformation);
-            dfcalculate(&scaled, 8, exporting && ui->transparent->isEnabled() && ui->transparent->isChecked());
+            // dfcalculate(&scaled, 8, exporting && ui->transparent->isEnabled() && ui->transparent->isChecked());
             emit renderedImage(scaled.scaled(texture.size()));
         } else {
             emit renderedImage(texture);
@@ -576,9 +578,20 @@ bool FontRender::outputBMFont(const QList<FontRec>& fontLst, const QImage& textu
         // output "common" tag
         QFontMetrics fontMetrics(fontRecIt->m_qfont);
         bool transparent = ui->transparent->isEnabled() && ui->transparent->isChecked();
+
+        // Fix line height and base bug
+        int lineHeight = fontMetrics.height();
+        int base = fontMetrics.ascent();
+        if (lineHeight != fontRecIt->m_size)
+        {
+            float scale = (float)lineHeight / (float)fontRecIt->m_size;
+            lineHeight = fontRecIt->m_size;
+            base = (int)(base / scale);
+        }
+
         fontStream << "common " <<
-                      "lineHeight=" << fontMetrics.height() << " " <<
-                      "base=" << fontMetrics.ascent() << " " <<
+                      "lineHeight=" << lineHeight << " " <<
+                      "base=" << base << " " <<
                       "scaleW=" << texture.width() << " " <<
                       "scaleH=" << texture.height() << " " <<
                       "pages=1 " <<
@@ -626,6 +639,114 @@ bool FontRender::outputBMFont(const QList<FontRec>& fontLst, const QImage& textu
                               "amount=" << kerningList->at(i).kerning << Qt::endl;
             }
         }
+    }
+    /* output font texture */
+    if(!texture.save(imageFileName, qPrintable(ui->outFormat->currentText())))
+    {
+        QMessageBox::critical(0, "Error", "Cannot save image " + imageFileName);
+        return false;
+    }
+    return true;
+}
+
+bool FontRender::outputBMFontXML(const QList<FontRec>& fontLst, const QImage& texture)
+{
+    int index = 0;
+    QList<FontRec>::const_iterator fontRecIt;
+    for (fontRecIt = fontLst.begin(); fontRecIt != fontLst.end(); ++fontRecIt)
+    {
+        // create output file names
+        QString fntFileName = fontLst.size() > 1 ? fileName + "_" + QString::number(index++) + ".fnt" : fileName + ".fnt";
+        // attempt to make output font file
+        QFile fntFile(fntFileName);
+        if (!fntFile.open(QIODevice::WriteOnly | QIODevice::Text))
+        {
+            QMessageBox::critical(0, "Error", "Cannot create file " + fntFileName);
+            return false;
+        }
+        QTextStream fontStream(&fntFile);
+        fontStream << "<?xml version=\"1.0\"?>\n";
+        fontStream << "<font>\n";
+
+        // output "info" tag
+        fontStream << "<info " <<
+            "face=\"" << fontRecIt->m_font << "\" " <<
+            "size=\"" << fontRecIt->m_size << "\" " <<
+            "bold=\"" << (fontRecIt->m_style & FontRec::BOLD ? 1 : 0) << "\" " <<
+            "italic=\"" << (fontRecIt->m_style & FontRec::ITALIC ? 1 : 0) << "\" " <<
+            "charset=\"\" " <<
+            "unicode=\"1\" " <<
+            "stretchH=\"100\" " <<
+            "smooth=\"" << (fontRecIt->m_style & FontRec::SMOOTH ? 1 : 0) << "\" " <<
+            "aa=\"1\" " <<
+            "padding=\"" << packer.borderTop << "," << packer.borderRight << "," << packer.borderBottom << "," << packer.borderLeft << "\" " <<
+            "spacing=\"0,0\" " <<
+            "outline=\"0\"/>" << Qt::endl;
+
+        // output "common" tag
+        QFontMetrics fontMetrics(fontRecIt->m_qfont);
+        bool transparent = ui->transparent->isEnabled() && ui->transparent->isChecked();
+        fontStream << "<common " <<
+            "lineHeight=\"" << fontMetrics.height() << "\" " <<
+            "base=\"" << fontMetrics.ascent() << "\" " <<
+            "scaleW=\"" << texture.width() << "\" " <<
+            "scaleH=\"" << texture.height() << "\" " <<
+            "pages=\"1\" " <<
+            "packed=\"0\" " <<
+            "alphaChnl=\"" << (transparent ? 0 : 4) << "\" " <<
+            "redChnl=\"" << (transparent ? 4 : 0) << "\" " <<
+            "greenChnl=\"" << (transparent ? 4 : 0) << "\" " <<
+            "blueChnl=\"" << (transparent ? 4 : 0) << "\" />" << Qt::endl;
+
+        // output "pages" tag
+        fontStream << "<pages>" << Qt::endl;
+        fontStream << "    <page " <<
+            "id=\"0\" " <<
+            "file=\"" << ui->outFile->text() + "." + imageExtension << "\" />" << Qt::endl;
+        fontStream << "</pages>" << Qt::endl;
+
+        // output "chars" tag
+        fontStream << "<chars " <<
+            "count=\"" << fontRecIt->m_glyphLst.size() << "\">" << Qt::endl;
+
+        // output each glyph record
+        QList<const packedImage*>::const_iterator chrItr;
+        for (chrItr = fontRecIt->m_glyphLst.begin(); chrItr != fontRecIt->m_glyphLst.end(); ++chrItr)
+        {
+            const packedImage* pGlyph = *chrItr;
+            // output glyph metrics
+            fontStream << "<char " <<
+                "id=\"" << pGlyph->ch.unicode() << "\" " <<
+                "x=\"" << pGlyph->rc.x() << "\" " <<
+                "y=\"" << pGlyph->rc.y() << "\" " <<
+                "width=\"" << pGlyph->img.width() << "\" " <<
+                "height=\"" << pGlyph->img.height() << "\" " <<
+                "xoffset=\"" << pGlyph->crop.x() + pGlyph->bearing - (int)packer.borderLeft << "\" " <<
+                "yoffset=\"" << pGlyph->crop.y() - (int)packer.borderTop << "\" " <<
+                "xadvance=\"" << pGlyph->charWidth << "\" " <<
+                "page=\"0\"  " <<
+                "chnl=\"15\" />" << Qt::endl;
+        }
+        fontStream << "</chars> " << Qt::endl;
+
+        const QList<KerningPair> *kerningList = &fontRecIt->m_kerningList;
+        if(kerningList->length() > 0)
+        {
+            // output "kernings" tag
+            fontStream << "<kernings " <<
+                "count=\"" << kerningList->size() << "\">" << Qt::endl;
+            // output each kerning pair
+            for (int i = 0; i < kerningList->length(); ++i) {
+                fontStream << "<kerning " <<
+                    "first=\"" << kerningList->at(i).first.unicode() << "\" " <<
+                    "second=\"" << kerningList->at(i).second.unicode() << "\" " <<
+                    "amount=\"" << kerningList->at(i).kerning << "\"/>" << Qt::endl;
+            }
+
+            fontStream << "</kernings>\n";
+        }
+
+        fontStream << "</font>\n";
     }
     /* output font texture */
     if(!texture.save(imageFileName, qPrintable(ui->outFormat->currentText())))

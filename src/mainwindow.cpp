@@ -31,12 +31,12 @@ MainWindow::MainWindow(QWidget *parent) :
     connect(thread, SIGNAL(renderedImage(QImage)), ui->widget, SLOT(updatePixmap(QImage)));
     ui->encoding->addItem("UNICODE");
     QList<QByteArray> avaiableCodecs = QTextCodec::availableCodecs();
-    qSort(avaiableCodecs);
+    std::sort(avaiableCodecs.begin(), avaiableCodecs.end());
     for(int i = 0; i < avaiableCodecs.count(); i++)
     {
         ui->encoding->addItem(avaiableCodecs.at(i));
     }
-    ui->outDir->setText(QDir::homePath());
+    ui->outDir->setText(QDir::currentPath());
     readSettings();
     thread->run();
 }
