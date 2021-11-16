@@ -1,5 +1,4 @@
-#ifndef IMAGEPACKER_H
-#define IMAGEPACKER_H
+#pragma once
 
 #include <QObject>
 #include <QImage>
@@ -37,8 +36,3 @@ public:
     enum {GUILLOTINE, MAXRECTS}; //method
     enum {NONE, TL, BAF, BSSF, BLSF, MINW, MINH}; //heuristic
 };
-
-
-
-
-#endif // IMAGEPACKER_H

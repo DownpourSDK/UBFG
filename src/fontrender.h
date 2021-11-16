@@ -1,11 +1,10 @@
-#ifndef FONTRENDER_H
-#define FONTRENDER_H
+#pragma once
 
 #include <QThread>
 #include <QImage>
 #include <QPainter>
 #include <QList>
-//#include "mainwindow.h"
+
 #include "ui_mainwindow.h"
 #include "imagepacker.h"
 
@@ -28,7 +27,7 @@ private:
     QString imageExtension;
     QString fileName;
 
-    struct kerningPair {
+    struct KerningPair {
         QChar first;
         QChar second;
         float kerning;
@@ -69,7 +68,7 @@ private:
         int     m_style;
         QFont   m_qfont;
         QList<const packedImage*> m_glyphLst;
-        QList<kerningPair> m_kerningList;
+        QList<KerningPair> m_kerningList;
     };
 
     bool outputFNT(const QList<FontRec>& fontLst, const QImage& texture);
@@ -84,5 +83,3 @@ private:
 public slots:
     void run();
 };
-
-#endif // FONTRENDER_H

@@ -1,5 +1,4 @@
-#ifndef FONTVIEW_H
-#define FONTVIEW_H
+#pragma once
 
 #include <QWidget>
 #include <QPainter>
@@ -19,5 +18,3 @@ private slots:
     void updatePixmap(const QImage &image);
     void rescale(int);
 };
-
-#endif // FONTVIEW_H

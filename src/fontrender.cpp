@@ -266,7 +266,7 @@ void FontRender::run()
                     float kerning = (float)(fontMetrics.width(kernPair) - widthAll) / (float)distanceFieldScale;
                     if(kerning != 0)
                     {
-                        kerningPair kp = {charFirst, charSecond, kerning};
+                        KerningPair kp = {charFirst, charSecond, kerning};
                         fontRec.m_kerningList << kp;
                     }
                 }
@@ -446,7 +446,7 @@ bool FontRender::outputFNT(const QList<FontRec>& fontLst, const QImage& texture)
                           pGlyph->charWidth << "\t" <<
                           pGlyph->rc.height() << "\n";
         }
-        const QList<kerningPair> *kerningList = &fontRecIt->m_kerningList;
+        const QList<KerningPair> *kerningList = &fontRecIt->m_kerningList;
         if(kerningList->length() > 0)
         {
             fontStream << "kerning pairs:\n";
@@ -511,7 +511,7 @@ bool FontRender::outputXML(const QList<FontRec>& fontLst, const QImage& texture)
                        "OrigHeight=\"" << pGlyph->rc.height() << "\" " <<
                        "/>\n";
         }
-        const QList<kerningPair> *kerningList = &fontRecIt->m_kerningList;
+        const QList<KerningPair> *kerningList = &fontRecIt->m_kerningList;
         for (int i = 0; i < kerningList->length(); ++i) {
             fontStream << "\t\t<kerning " <<
                           "first=\"" << qchar2ui(kerningList->at(i).first) << "\" " <<
@@ -572,7 +572,7 @@ bool FontRender::outputBMFont(const QList<FontRec>& fontLst, const QImage& textu
                       "aa=1 " <<
                       "padding=" << packer.borderTop << "," << packer.borderRight << "," << packer.borderBottom << "," << packer.borderLeft << " " <<
                       "spacing=0,0 " <<
-                      "outline=0" << endl;
+                      "outline=0" << Qt::endl;
         // output "common" tag
         QFontMetrics fontMetrics(fontRecIt->m_qfont);
         bool transparent = ui->transparent->isEnabled() && ui->transparent->isChecked();
@@ -586,14 +586,14 @@ bool FontRender::outputBMFont(const QList<FontRec>& fontLst, const QImage& textu
                       "alphaChnl=" << (transparent ? 0 : 4) << " " <<
                       "redChnl=" << (transparent ? 4 : 0) << " " <<
                       "greenChnl=" << (transparent ? 4 : 0) << " " <<
-                      "blueChnl=" << (transparent ? 4 : 0) << endl;
+                      "blueChnl=" << (transparent ? 4 : 0) << Qt::endl;
         // output "page" tag
         fontStream << "page " <<
                       "id=0 " <<
-                      "file=\"" << ui->outFile->text() + "." + imageExtension << "\"" << endl;
+                      "file=\"" << ui->outFile->text() + "." + imageExtension << "\"" << Qt::endl;
         // output "chars" tag
         fontStream << "chars " <<
-                      "count=" << fontRecIt->m_glyphLst.size() << endl;
+                      "count=" << fontRecIt->m_glyphLst.size() << Qt::endl;
         // output each glyph record
         QList<const packedImage*>::const_iterator chrItr;
         for (chrItr = fontRecIt->m_glyphLst.begin(); chrItr != fontRecIt->m_glyphLst.end(); ++chrItr)
@@ -610,20 +610,20 @@ bool FontRender::outputBMFont(const QList<FontRec>& fontLst, const QImage& textu
                           "yoffset=" << qSetFieldWidth(5) << pGlyph->crop.y() - (int)packer.borderTop << qSetFieldWidth(0) << " " <<
                           "xadvance=" << qSetFieldWidth(5) << pGlyph->charWidth << qSetFieldWidth(0) << " " <<
                           "page=0  " <<
-                          "chnl=15" << endl;
+                          "chnl=15" << Qt::endl;
         }
-        const QList<kerningPair> *kerningList = &fontRecIt->m_kerningList;
+        const QList<KerningPair> *kerningList = &fontRecIt->m_kerningList;
         if(kerningList->length() > 0)
         {
             // output "kernings" tag
             fontStream << "kernings " <<
-                          "count=" << kerningList->size() << endl;
+                          "count=" << kerningList->size() << Qt::endl;
             // output each kerning pair
             for (int i = 0; i < kerningList->length(); ++i) {
                 fontStream << "kerning " <<
                               "first=" << qSetFieldWidth(3) << kerningList->at(i).first.unicode() << qSetFieldWidth(0) << " " <<
                               "second=" << qSetFieldWidth(3) << kerningList->at(i).second.unicode() << qSetFieldWidth(0) << " " <<
-                              "amount=" << kerningList->at(i).kerning << endl;
+                              "amount=" << kerningList->at(i).kerning << Qt::endl;
             }
         }
     }

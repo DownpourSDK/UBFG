@@ -1,5 +1,4 @@
-#ifndef GUILLOTINE_H
-#define GUILLOTINE_H
+#pragma once
 
 #include <QImage>
 #include "imagepacker.h"
@@ -23,5 +22,3 @@ private:
     int heurMin, heurMax;
     Guillotine* heurBestFit;
 };
-
-#endif // GUILLOTINE_H

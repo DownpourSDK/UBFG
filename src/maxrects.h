@@ -1,5 +1,4 @@
-#ifndef MAXRECTS_H
-#define MAXRECTS_H
+#pragma once
 #include <QImage>
 
 struct trbl
@@ -13,6 +12,7 @@ struct MaxRectsNode
     QImage * i; //image
     trbl b; //border
 };
+
 class MaxRects
 {
 public:
@@ -24,5 +24,3 @@ public:
     int heuristic, w, h;
     bool leftToRight;
 };
-
-#endif // MAXRECTS_H
